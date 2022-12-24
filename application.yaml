@@ -10,7 +10,7 @@ spec:
     repoURL: https://github.com/gerspcs/k8slearnings.git
     targetRevision: HEAD
     path: dev
-  destination:
+  destination: 
     server: https://192.168.39.129:8443
     namespace: myapp
 
@@ -21,3 +21,4 @@ spec:
     automated:
       selfHeal: true
       prune: true
+

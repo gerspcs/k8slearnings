@@ -22,11 +22,3 @@ spec:
       destination:
         server: '{{url}}'
         namespace: guestbook
-
-  syncPolicy:
-    syncOptions:
-    - CreateNamespace=true
-
-    automated:
-      selfHeal: true
-      prune: true

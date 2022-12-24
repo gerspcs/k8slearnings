@@ -1,19 +1,27 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: ApplicationSet
 metadata:
-  name: myapp-argo-application
-  namespace: argocd
+  name: guestbook
 spec:
-  project: default
-
-  source:
-    repoURL: https://github.com/gerspcs/k8slearnings.git
-    targetRevision: HEAD
-    path: dev
-  destination: 
-    #server: https://kubernetes.default.svc
-    server: https://192.168.39.107
-    namespace: myapp
+  generators:
+  - list:
+      elements:
+      - cluster: minikube
+        url: https://192.168.50.96
+      - cluster: k8sdemo
+        url: https://192.168.39.107
+  template:
+    metadata:
+      name: '{{cluster}}-guestbook'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/argoproj/argo-cd.git
+        targetRevision: HEAD
+        path: applicationset/examples/list-generator/guestbook/{{cluster}}
+      destination:
+        server: '{{url}}'
+        namespace: guestbook
 
   syncPolicy:
     syncOptions:

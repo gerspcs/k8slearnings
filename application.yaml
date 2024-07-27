@@ -8,10 +8,10 @@ spec:
 
   source:
     repoURL: https://github.com/gerspcs/k8slearnings.git
-    targetRevision: HEAD
+    targetRevision: minikube-custom
     path: dev
   destination: 
-    server: https://192.168.122.1:8443
+    server: https://kubernetes.default.svc
     namespace: myapp-other
 
   syncPolicy:

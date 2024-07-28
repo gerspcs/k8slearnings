@@ -5,6 +5,7 @@ metadata:
 spec:
   selector:
     app: myapp
+    namespace: myapp-other
   ports:
   - port: 8080
     protocol: TCP

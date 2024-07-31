@@ -16,7 +16,7 @@ metadata:
   labels:
     app: myapp
   name: myapp-service
-  namespace: myapp
+  namespace: myapp-other
 spec:
   type: NodePort
   ports:
@@ -25,11 +25,3 @@ spec:
     targetPort: 3001
   selector:
     app: myapp
-<<<<<<< HEAD
-=======
-    namespace: myapp-other
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 80
->>>>>>> abf0f93c1759634718f2533dc024fc6d83f85f0d

@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myapp-argo-application-other
+  namespace: myapp-other
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/gerspcs/k8slearnings.git
+    targetRevision: HEAD
+    path: dev
+  destination: 
+    server: https://kubernetes.default.svc
+    namespace: myapp-other
+
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+
+    automated:
+      selfHeal: false
+      prune: true
+

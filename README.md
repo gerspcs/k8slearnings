@@ -1,40 +1,15 @@
-<!doctype html>
-<html lang="en">
-        <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<p align="center">
+  <a href="https://revealjs.com">
+  <img src="https://hakim-static.s3.amazonaws.com/reveal-js/logo/v1/reveal-black-text-sticker.png" alt="reveal.js" width="500">
+  </a>
+  <br><br>
+  <a href="https://github.com/hakimel/reveal.js/actions"><img src="https://github.com/hakimel/reveal.js/workflows/tests/badge.svg"></a>
+  <a href="https://slides.com/"><img src="https://s3.amazonaws.com/static.slid.es/images/slides-github-banner-320x40.png?1" alt="Slides" width="160" height="20"></a>
+</p>
 
-                <title>reveal.js</title>
+reveal.js is an open source HTML presentation framework. It enables anyone with a web browser to create beautiful presentations for free. Check out the live demo at [revealjs.com](https://revealjs.com/).
 
-                <link rel="stylesheet" href="dist/reset.css">
-                <link rel="stylesheet" href="dist/reveal.css">
-                <link rel="stylesheet" href="dist/theme/black.css">
+The framework comes with a powerful feature set including [nested slides](https://revealjs.com/vertical-slides/), [Markdown support](https://revealjs.com/markdown/), [Auto-Animate](https://revealjs.com/>
 
-                <!-- Theme used for syntax highlighted code -->
-                <link rel="stylesheet" href="plugin/highlight/monokai.css">
-        </head>
-        <body>
-                <div class="reveal">
-                        <div class="slides">
-                                <section>Slide 1</section>
-                                <section>Slide 2</section>
-                        </div>
-                </div>
+---
 
-                <script src="dist/reveal.js"></script>
-                <script src="plugin/notes/notes.js"></script>
-                <script src="plugin/markdown/markdown.js"></script>
-                <script src="plugin/highlight/highlight.js"></script>
-                <script>
-                        // More info about initialization & config:
-                        // - https://revealjs.com/initialization/
-                        // - https://revealjs.com/config/
-                        Reveal.initialize({
-                                hash: true,
-
-                                // Learn about plugins: https://revealjs.com/plugins/
-                                plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-                        });
-                </script>
-        </body>
-</html>

@@ -17,7 +17,7 @@ spec:
         app: myapp
     spec:
       containers:
-      - image: danielkraic/asciiquarium
+      - image: vamsijakkula/hello-blue-whale:v1
         name: myapp
 ---
 apiVersion: v1

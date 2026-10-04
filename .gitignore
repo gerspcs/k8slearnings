@@ -1,0 +1,12 @@
+.harbor-admin
+*.key
+.env
+kubeconfig*
+*.pem
+cosign.key
+*.crt
+ui/recordings/
+CLAUDE.md
+__pycache__/
+*.pyc
+infra/cosign/cosign.pub

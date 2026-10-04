@@ -1,0 +1,21 @@
+# Self-signed bootstrap -> local CA -> ClusterIssuer "sdlc-ca" used by Harbor etc.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: {name: selfsigned}
+spec: {selfSigned: {}}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: sdlc-ca, namespace: cert-manager}
+spec:
+  isCA: true
+  commonName: sdlc-poc-local-ca
+  secretName: sdlc-ca
+  duration: 87600h
+  privateKey: {algorithm: ECDSA, size: 256}
+  issuerRef: {name: selfsigned, kind: ClusterIssuer}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata: {name: sdlc-ca}
+spec: {ca: {secretName: sdlc-ca}}

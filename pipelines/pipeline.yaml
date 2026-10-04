@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata: {name: artifact-pipeline}
+spec:
+  params:
+    - {name: image, default: "harbor.local:9443/poc/sample-app"}
+    - {name: tag}
+    - {name: fail-severity, default: "CRITICAL"}
+  workspaces:
+    - {name: source}
+    - {name: out}
+  tasks:
+    - name: build-push
+      taskRef: {name: build-push}
+      params: [{name: image, value: $(params.image)}, {name: tag, value: $(params.tag)}]
+      workspaces: [{name: source, workspace: source}]
+    - name: sbom
+      runAfter: [build-push]
+      taskRef: {name: sbom}
+      params: [{name: image, value: $(params.image)}, {name: digest, value: $(tasks.build-push.results.digest)}]
+      workspaces: [{name: out, workspace: out}]
+    - name: vuln-scan
+      runAfter: [sbom]
+      taskRef: {name: vuln-scan}
+      params: [{name: severity, value: $(params.fail-severity)}]
+      workspaces: [{name: out, workspace: out}]
+    - name: sign-attest
+      runAfter: [vuln-scan]
+      taskRef: {name: sign-attest}
+      params: [{name: image, value: $(params.image)}, {name: digest, value: $(tasks.build-push.results.digest)}]
+      workspaces: [{name: out, workspace: out}]
+    - name: verify
+      runAfter: [sign-attest]
+      taskRef: {name: verify}
+      params: [{name: image, value: $(params.image)}, {name: digest, value: $(tasks.build-push.results.digest)}]

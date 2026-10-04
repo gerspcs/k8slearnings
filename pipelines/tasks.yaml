@@ -1,0 +1,135 @@
+# Tasks for the artifact pipeline. All tool images are pinned by digest.
+# Registry creds: secret harbor-robot (dockerconfigjson). Local CA: configmap sdlc-ca.
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: {name: build-push}
+spec:
+  params:
+    - {name: image, description: "Image repo without tag, e.g. harbor.local:9443/poc/sample-app"}
+    - {name: tag}
+  workspaces:
+    - {name: source, readOnly: true}
+  results:
+    - {name: digest, description: "sha256 digest of the pushed image"}
+  volumes:
+    - {name: auth, secret: {secretName: harbor-robot}}
+    - {name: ca, configMap: {name: sdlc-ca, items: [{key: ca.crt, path: ca.crt}]}}
+  steps:
+    - name: build-and-push
+      image: quay.io/buildah/stable@sha256:a66e0125a03ed7bf521d13457d3dc64b8468d7c66688afd63c7ab188c3026c1a
+      securityContext:
+        capabilities: {add: [SETFCAP]}
+      volumeMounts:
+        - {name: auth, mountPath: /auth, readOnly: true}
+        - {name: ca, mountPath: /ca, readOnly: true}
+      script: |
+        #!/bin/sh
+        set -eu
+        buildah --storage-driver=vfs bud --isolation=chroot --format=oci \
+          -t "$(params.image):$(params.tag)" "$(workspaces.source.path)"
+        buildah --storage-driver=vfs push --authfile /auth/.dockerconfigjson --cert-dir /ca \
+          --digestfile /tmp/digest "$(params.image):$(params.tag)" "docker://$(params.image):$(params.tag)"
+        tr -d '\n' < /tmp/digest | tee "$(results.digest.path)"
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: {name: sbom}
+spec:
+  params:
+    - {name: image}
+    - {name: digest}
+  workspaces:
+    - {name: out}
+  volumes:
+    - {name: auth, secret: {secretName: harbor-robot, items: [{key: .dockerconfigjson, path: config.json}]}}
+    - {name: ca, configMap: {name: sdlc-ca, items: [{key: ca.crt, path: ca.crt}]}}
+  steps:
+    - name: syft
+      image: docker.io/anchore/syft@sha256:0356562f495d432056237fbea5cbc2d4839c9c75cd500784a66de2e7cc95ca7c
+      env:
+        - {name: DOCKER_CONFIG, value: /docker}
+        - {name: SSL_CERT_FILE, value: /ca/ca.crt}
+      volumeMounts:
+        - {name: auth, mountPath: /docker, readOnly: true}
+        - {name: ca, mountPath: /ca, readOnly: true}
+      args: ["registry:$(params.image)@$(params.digest)", "-o", "spdx-json=$(workspaces.out.path)/sbom.spdx.json"]
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: {name: vuln-scan}
+spec:
+  params:
+    - {name: severity, default: "CRITICAL", description: "Comma list that FAILS the build"}
+  workspaces:
+    - {name: out}
+  steps:
+    - name: trivy-sbom
+      image: docker.io/aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+      args: ["sbom", "--scanners", "vuln", "--severity", "$(params.severity)", "--exit-code", "1",
+             "--format", "table", "$(workspaces.out.path)/sbom.spdx.json"]
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: {name: sign-attest}
+spec:
+  params:
+    - {name: image}
+    - {name: digest}
+  workspaces:
+    - {name: out}
+  volumes:
+    - {name: key, secret: {secretName: cosign-key, items: [{key: cosign.key, path: cosign.key}]}}
+    - {name: sigcfg, configMap: {name: cosign-signing-config}}
+    - {name: auth, secret: {secretName: harbor-robot, items: [{key: .dockerconfigjson, path: config.json}]}}
+    - {name: ca, configMap: {name: sdlc-ca, items: [{key: ca.crt, path: ca.crt}]}}
+  stepTemplate:
+    env:
+      - {name: DOCKER_CONFIG, value: /docker}
+      - {name: SSL_CERT_FILE, value: /ca/ca.crt}
+      - name: COSIGN_PASSWORD
+        valueFrom: {secretKeyRef: {name: cosign-key, key: password}}
+    volumeMounts:
+      - {name: key, mountPath: /key, readOnly: true}
+      - {name: sigcfg, mountPath: /sigcfg, readOnly: true}
+      - {name: auth, mountPath: /docker, readOnly: true}
+      - {name: ca, mountPath: /ca, readOnly: true}
+  steps:
+    - name: sign
+      image: gcr.io/projectsigstore/cosign@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8
+      command: [cosign]
+      args: ["sign", "--key", "/key/cosign.key", "--signing-config", "/sigcfg/signing-config.json", "--yes", "$(params.image)@$(params.digest)"]
+    - name: attest-sbom
+      image: gcr.io/projectsigstore/cosign@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8
+      command: [cosign]
+      args: ["attest", "--key", "/key/cosign.key", "--signing-config", "/sigcfg/signing-config.json", "--yes", "--type", "spdxjson",
+             "--predicate", "$(workspaces.out.path)/sbom.spdx.json", "$(params.image)@$(params.digest)"]
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: {name: verify}
+spec:
+  params:
+    - {name: image}
+    - {name: digest}
+  volumes:
+    - {name: pub, configMap: {name: cosign-pub}}
+    - {name: auth, secret: {secretName: harbor-robot, items: [{key: .dockerconfigjson, path: config.json}]}}
+    - {name: ca, configMap: {name: sdlc-ca, items: [{key: ca.crt, path: ca.crt}]}}
+  stepTemplate:
+    env:
+      - {name: DOCKER_CONFIG, value: /docker}
+      - {name: SSL_CERT_FILE, value: /ca/ca.crt}
+    volumeMounts:
+      - {name: pub, mountPath: /pub, readOnly: true}
+      - {name: auth, mountPath: /docker, readOnly: true}
+      - {name: ca, mountPath: /ca, readOnly: true}
+  steps:
+    - name: verify-signature
+      image: gcr.io/projectsigstore/cosign@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8
+      command: [cosign]
+      args: ["verify", "--key", "/pub/cosign.pub", "--insecure-ignore-tlog=true", "$(params.image)@$(params.digest)"]
+    - name: verify-sbom-attestation
+      image: gcr.io/projectsigstore/cosign@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8
+      command: [cosign]
+      args: ["verify-attestation", "--key", "/pub/cosign.pub", "--insecure-ignore-tlog=true", "--type", "spdxjson", "$(params.image)@$(params.digest)"]

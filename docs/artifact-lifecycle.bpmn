@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="defs" targetNamespace="http://example.org/sdlc-poc">
+  <collaboration id="collab"><participant id="pool" name="Software artifact lifecycle" processRef="proc"/></collaboration>
+  <process id="proc" isExecutable="false">
+    <laneSet id="lanes">
+      <lane id="L_dev" name="Developer">
+        <flowNodeRef>start</flowNodeRef>
+        <flowNodeRef>commit</flowNodeRef>
+        <flowNodeRef>reject</flowNodeRef>
+      </lane>
+      <lane id="L_ci" name="CI pipeline (Tekton)">
+        <flowNodeRef>build</flowNodeRef>
+        <flowNodeRef>sbom</flowNodeRef>
+        <flowNodeRef>scan</flowNodeRef>
+        <flowNodeRef>gw1</flowNodeRef>
+        <flowNodeRef>sign</flowNodeRef>
+      </lane>
+      <lane id="L_reg" name="Registry (Harbor)">
+        <flowNodeRef>store</flowNodeRef>
+      </lane>
+      <lane id="L_run" name="Cluster (Kubernetes + Kyverno)">
+        <flowNodeRef>req</flowNodeRef>
+        <flowNodeRef>gw2</flowNodeRef>
+        <flowNodeRef>ok</flowNodeRef>
+        <flowNodeRef>blocked</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="start" name="Code change needed">
+      <outgoing>f_start_commit</outgoing>
+    </startEvent>
+    <task id="commit" name="Commit and push source code">
+      <incoming>f_start_commit</incoming>
+      <outgoing>f_commit_build</outgoing>
+    </task>
+    <task id="build" name="Build container image">
+      <incoming>f_commit_build</incoming>
+      <outgoing>f_build_sbom</outgoing>
+    </task>
+    <task id="sbom" name="Generate SBOM (Syft)">
+      <incoming>f_build_sbom</incoming>
+      <outgoing>f_sbom_scan</outgoing>
+    </task>
+    <task id="scan" name="Scan for known vulnerabilities (Trivy / Grype)">
+      <incoming>f_sbom_scan</incoming>
+      <outgoing>f_scan_gw1</outgoing>
+    </task>
+    <exclusiveGateway id="gw1" name="Critical findings?">
+      <incoming>f_scan_gw1</incoming>
+      <outgoing>f_gw1_sign</outgoing>
+      <outgoing>f_gw1_reject</outgoing>
+    </exclusiveGateway>
+    <endEvent id="reject" name="Rejected: fix and recommit">
+      <incoming>f_gw1_reject</incoming>
+    </endEvent>
+    <task id="sign" name="Sign image and record provenance (Cosign / Chains)">
+      <incoming>f_gw1_sign</incoming>
+      <outgoing>f_sign_store</outgoing>
+    </task>
+    <task id="store" name="Store image, SBOM and signature (Harbor)">
+      <incoming>f_sign_store</incoming>
+      <outgoing>f_store_req</outgoing>
+    </task>
+    <task id="req" name="Request deployment">
+      <incoming>f_store_req</incoming>
+      <outgoing>f_req_gw2</outgoing>
+    </task>
+    <exclusiveGateway id="gw2" name="Signature valid? (Kyverno)">
+      <incoming>f_req_gw2</incoming>
+      <outgoing>f_gw2_ok</outgoing>
+      <outgoing>f_gw2_blocked</outgoing>
+    </exclusiveGateway>
+    <endEvent id="ok" name="Workload runs">
+      <incoming>f_gw2_ok</incoming>
+    </endEvent>
+    <endEvent id="blocked" name="Deployment blocked">
+      <incoming>f_gw2_blocked</incoming>
+    </endEvent>
+    <sequenceFlow id="f_start_commit" sourceRef="start" targetRef="commit"/>
+    <sequenceFlow id="f_commit_build" sourceRef="commit" targetRef="build"/>
+    <sequenceFlow id="f_build_sbom" sourceRef="build" targetRef="sbom"/>
+    <sequenceFlow id="f_sbom_scan" sourceRef="sbom" targetRef="scan"/>
+    <sequenceFlow id="f_scan_gw1" sourceRef="scan" targetRef="gw1"/>
+    <sequenceFlow id="f_gw1_sign" name="No" sourceRef="gw1" targetRef="sign"/>
+    <sequenceFlow id="f_gw1_reject" name="Yes" sourceRef="gw1" targetRef="reject"/>
+    <sequenceFlow id="f_sign_store" sourceRef="sign" targetRef="store"/>
+    <sequenceFlow id="f_store_req" sourceRef="store" targetRef="req"/>
+    <sequenceFlow id="f_req_gw2" sourceRef="req" targetRef="gw2"/>
+    <sequenceFlow id="f_gw2_ok" name="Yes" sourceRef="gw2" targetRef="ok"/>
+    <sequenceFlow id="f_gw2_blocked" name="No" sourceRef="gw2" targetRef="blocked"/>
+  </process>
+  <bpmndi:BPMNDiagram id="d"><bpmndi:BPMNPlane id="p" bpmnElement="collab">
+    <bpmndi:BPMNShape id="s_pool" bpmnElement="pool" isHorizontal="true"><dc:Bounds x="0" y="20" width="1900" height="680"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_L_dev" bpmnElement="L_dev" isHorizontal="true"><dc:Bounds x="30" y="20" width="1870" height="170"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_L_ci" bpmnElement="L_ci" isHorizontal="true"><dc:Bounds x="30" y="190" width="1870" height="170"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_L_reg" bpmnElement="L_reg" isHorizontal="true"><dc:Bounds x="30" y="360" width="1870" height="170"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_L_run" bpmnElement="L_run" isHorizontal="true"><dc:Bounds x="30" y="530" width="1870" height="170"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_start" bpmnElement="start"><dc:Bounds x="102" y="72" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_commit" bpmnElement="commit"><dc:Bounds x="195" y="52" width="130" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_build" bpmnElement="build"><dc:Bounds x="355" y="222" width="130" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_sbom" bpmnElement="sbom"><dc:Bounds x="515" y="222" width="130" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_scan" bpmnElement="scan"><dc:Bounds x="675" y="222" width="130" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_gw1" bpmnElement="gw1" isMarkerVisible="true"><dc:Bounds x="875" y="235" width="50" height="50"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_reject" bpmnElement="reject"><dc:Bounds x="882" y="72" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_sign" bpmnElement="sign"><dc:Bounds x="1005" y="222" width="130" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_store" bpmnElement="store"><dc:Bounds x="1165" y="392" width="130" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_req" bpmnElement="req"><dc:Bounds x="1325" y="562" width="130" height="76"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_gw2" bpmnElement="gw2" isMarkerVisible="true"><dc:Bounds x="1525" y="575" width="50" height="50"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_ok" bpmnElement="ok"><dc:Bounds x="1692" y="582" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="s_blocked" bpmnElement="blocked"><dc:Bounds x="1532" y="644" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNEdge id="e_start_commit" bpmnElement="f_start_commit"><di:waypoint x="138" y="90"/><di:waypoint x="195" y="90"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_commit_build" bpmnElement="f_commit_build"><di:waypoint x="325" y="90"/><di:waypoint x="420" y="90"/><di:waypoint x="420" y="222"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_build_sbom" bpmnElement="f_build_sbom"><di:waypoint x="485" y="260"/><di:waypoint x="515" y="260"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_sbom_scan" bpmnElement="f_sbom_scan"><di:waypoint x="645" y="260"/><di:waypoint x="675" y="260"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_scan_gw1" bpmnElement="f_scan_gw1"><di:waypoint x="805" y="260"/><di:waypoint x="875" y="260"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_gw1_sign" bpmnElement="f_gw1_sign"><di:waypoint x="925" y="260"/><di:waypoint x="1005" y="260"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_gw1_reject" bpmnElement="f_gw1_reject"><di:waypoint x="900" y="235"/><di:waypoint x="900" y="108"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_sign_store" bpmnElement="f_sign_store"><di:waypoint x="1135" y="260"/><di:waypoint x="1230" y="260"/><di:waypoint x="1230" y="392"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_store_req" bpmnElement="f_store_req"><di:waypoint x="1295" y="430"/><di:waypoint x="1390" y="430"/><di:waypoint x="1390" y="562"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_req_gw2" bpmnElement="f_req_gw2"><di:waypoint x="1455" y="600"/><di:waypoint x="1525" y="600"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_gw2_ok" bpmnElement="f_gw2_ok"><di:waypoint x="1575" y="600"/><di:waypoint x="1692" y="600"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="e_gw2_blocked" bpmnElement="f_gw2_blocked"><di:waypoint x="1550" y="625"/><di:waypoint x="1550" y="644"/></bpmndi:BPMNEdge>
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</definitions>

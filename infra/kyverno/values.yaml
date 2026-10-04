@@ -1,0 +1,11 @@
+# Kyverno chart 3.9.1 (app v1.19.1). Trusts the lab CA (added to, not replacing, the system roots via SSL_CERT_DIR)
+# and reads Harbor with the robot credentials in secret harbor-robot (namespace kyverno).
+existingImagePullSecrets: [harbor-robot]
+admissionController:
+  container:
+    extraEnvVars:
+      - {name: SSL_CERT_DIR, value: /lab-ca}
+  extraVolumes:
+    - {name: lab-ca, configMap: {name: sdlc-ca}}
+  extraVolumeMounts:
+    - {name: lab-ca, mountPath: /lab-ca, readOnly: true}

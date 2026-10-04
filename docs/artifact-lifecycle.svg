@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="bpmn" viewBox="0 0 1910 720" width="1910" height="720" font-family="Helvetica,Arial,sans-serif">
+<title>BPMN 2.0: software artifact lifecycle</title><desc>Commit, build, SBOM, scan, decision on critical findings, sign, store in Harbor, request deployment, signature check, run or block.</desc>
+<style>
+svg.bpmn{--bg:#fff;--lane0:#eef4ff;--lane1:#eefaf0;--lane2:#fff8e8;--lane3:#f6eefa;--ink:#111;--line:#333;--card:#fff;--ok:#2e7d32;--bad:#b71c1c}
+.bg{fill:var(--bg)} .pool{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.lane rect{stroke:var(--line)} .lane.l0 rect{fill:var(--lane0)} .lane.l1 rect{fill:var(--lane1)} .lane.l2 rect{fill:var(--lane2)} .lane.l3 rect{fill:var(--lane3)}
+text{fill:var(--ink);font-family:Helvetica,Arial,sans-serif;font-size:13px} .lane text{font-weight:bold} .elabel{font-weight:bold}
+.flow path{fill:none;stroke:var(--line);stroke-width:1.6} #ar path{fill:var(--line)}
+.task rect,.gateway polygon{fill:var(--card);stroke:var(--line);stroke-width:1.6} .gateway .x{stroke:var(--line);stroke-width:2.5;fill:none}
+.start circle{fill:var(--card);stroke:var(--ok);stroke-width:2} .end circle{fill:var(--card);stroke:var(--bad);stroke-width:4} .end.good circle{stroke:var(--ok)}
+</style>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="bg" width="100%" height="100%"/>
+<rect class="pool" x="1" y="20" width="1899" height="680"/>
+<text transform="translate(18,360.0) rotate(-90)" text-anchor="middle" font-weight="bold">Software artifact lifecycle</text>
+<g class="lane l0" data-id="L_dev"><rect x="30" y="20" width="1870" height="170"/><text x="42" y="40">Developer</text></g>
+<g class="lane l1" data-id="L_ci"><rect x="30" y="190" width="1870" height="170"/><text x="42" y="210">CI pipeline (Tekton)</text></g>
+<g class="lane l2" data-id="L_reg"><rect x="30" y="360" width="1870" height="170"/><text x="42" y="380">Registry (Harbor)</text></g>
+<g class="lane l3" data-id="L_run"><rect x="30" y="530" width="1870" height="170"/><text x="42" y="550">Cluster (Kubernetes + Kyverno)</text></g>
+<g class="flow" data-id="f_start_commit"><path id="path_f_start_commit" d="M138,90 L195,90" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_commit_build"><path id="path_f_commit_build" d="M325,90 L420,90 L420,222" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_build_sbom"><path id="path_f_build_sbom" d="M485,260 L515,260" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_sbom_scan"><path id="path_f_sbom_scan" d="M645,260 L675,260" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_scan_gw1"><path id="path_f_scan_gw1" d="M805,260 L875,260" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_gw1_sign"><path id="path_f_gw1_sign" d="M925,260 L1005,260" marker-end="url(#ar)"/><text class="elabel" x="935.0" y="254">No</text></g>
+<g class="flow" data-id="f_gw1_reject"><path id="path_f_gw1_reject" d="M900,235 L900,108" marker-end="url(#ar)"/><text class="elabel" x="908" y="225.0">Yes</text></g>
+<g class="flow" data-id="f_sign_store"><path id="path_f_sign_store" d="M1135,260 L1230,260 L1230,392" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_store_req"><path id="path_f_store_req" d="M1295,430 L1390,430 L1390,562" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_req_gw2"><path id="path_f_req_gw2" d="M1455,600 L1525,600" marker-end="url(#ar)"/></g>
+<g class="flow" data-id="f_gw2_ok"><path id="path_f_gw2_ok" d="M1575,600 L1692,600" marker-end="url(#ar)"/><text class="elabel" x="1585.0" y="594">Yes</text></g>
+<g class="flow" data-id="f_gw2_blocked"><path id="path_f_gw2_blocked" d="M1550,625 L1550,644" marker-end="url(#ar)"/><text class="elabel" x="1558" y="643.0">No</text></g>
+<g class="node event start" data-id="start"><circle cx="120" cy="90" r="18"/><text x="120" y="124" text-anchor="middle">Code change</text><text x="120" y="140" text-anchor="middle">needed</text></g>
+<g class="node task" data-id="commit"><rect x="195" y="52" width="130" height="76" rx="10"/><text x="260" y="86" text-anchor="middle">Commit and push</text><text x="260" y="102" text-anchor="middle">source code</text></g>
+<g class="node task" data-id="build"><rect x="355" y="222" width="130" height="76" rx="10"/><text x="420" y="256" text-anchor="middle">Build container</text><text x="420" y="272" text-anchor="middle">image</text></g>
+<g class="node task" data-id="sbom"><rect x="515" y="222" width="130" height="76" rx="10"/><text x="580" y="256" text-anchor="middle">Generate SBOM</text><text x="580" y="272" text-anchor="middle">(Syft)</text></g>
+<g class="node task" data-id="scan"><rect x="675" y="222" width="130" height="76" rx="10"/><text x="740" y="248" text-anchor="middle">Scan for known</text><text x="740" y="264" text-anchor="middle">vulnerabilities</text><text x="740" y="280" text-anchor="middle">(Trivy / Grype)</text></g>
+<g class="node gateway" data-id="gw1"><polygon points="900,235 925,260 900,285 875,260"/><path class="x" d="M891,251 L909,269 M891,269 L909,251"/><text x="900" y="308" text-anchor="middle">Critical</text><text x="900" y="324" text-anchor="middle">findings?</text></g>
+<g class="node event end" data-id="reject"><circle cx="900" cy="90" r="18"/><text x="900" y="36" text-anchor="middle">Rejected:</text><text x="900" y="52" text-anchor="middle">fix and recommit</text></g>
+<g class="node task" data-id="sign"><rect x="1005" y="222" width="130" height="76" rx="10"/><text x="1070" y="248" text-anchor="middle">Sign image and</text><text x="1070" y="264" text-anchor="middle">record provenance</text><text x="1070" y="280" text-anchor="middle">(Cosign / Chains)</text></g>
+<g class="node task" data-id="store"><rect x="1165" y="392" width="130" height="76" rx="10"/><text x="1230" y="418" text-anchor="middle">Store image, SBOM</text><text x="1230" y="434" text-anchor="middle">and signature</text><text x="1230" y="450" text-anchor="middle">(Harbor)</text></g>
+<g class="node task" data-id="req"><rect x="1325" y="562" width="130" height="76" rx="10"/><text x="1390" y="596" text-anchor="middle">Request</text><text x="1390" y="612" text-anchor="middle">deployment</text></g>
+<g class="node gateway" data-id="gw2"><polygon points="1550,575 1575,600 1550,625 1525,600"/><path class="x" d="M1541,591 L1559,609 M1541,609 L1559,591"/><text x="1550" y="526" text-anchor="middle">Signature</text><text x="1550" y="542" text-anchor="middle">valid?</text><text x="1550" y="558" text-anchor="middle">(Kyverno)</text></g>
+<g class="node event end good" data-id="ok"><circle cx="1710" cy="600" r="18"/><text x="1710" y="636" text-anchor="middle">Workload</text><text x="1710" y="652" text-anchor="middle">runs</text></g>
+<g class="node event end" data-id="blocked"><circle cx="1550" cy="662" r="18"/><text x="1574" y="658" text-anchor="start">Deployment</text><text x="1574" y="674" text-anchor="start">blocked</text></g>
+</svg>

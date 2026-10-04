@@ -1,0 +1,43 @@
+{
+  "idle": {
+    "title": "Press Start to watch a package travel from code to a running system",
+    "plain": "Every safety check you will see is real. The left side is the process. The bottom is the machinery doing the work. They light up together.",
+    "technical": "Start creates a Tekton PipelineRun in namespace sdlc-build. Each BPMN task maps to a TaskRun and its pod; the cluster view is a live read of the Kubernetes API."
+  },
+  "done": {
+    "title": "A signed, scanned package is stored and verified",
+    "plain": "Now try to run it. Deploy the signed package, then try to break the rules with an unsigned one.",
+    "technical": "The pipeline finished: image pushed by digest, SBOM generated, scan gate passed, image signed and SBOM attested with Cosign, signature re-verified."
+  },
+  "steps": {
+    "start":   {"title": "A developer saves a change", "plain": "Someone on the team saves new code. This starts the journey.", "technical": "In a full setup a git push would trigger the pipeline. In this demo the Start button creates the PipelineRun.", "task": null, "touches": ["sdlc-build"]},
+    "commit":  {"title": "A developer saves a change", "plain": "Someone on the team saves new code. This starts the journey.", "technical": "In a full setup a git push would trigger the pipeline. In this demo the Start button creates the PipelineRun.", "task": null, "touches": ["sdlc-build"]},
+    "build":   {"title": "Packing the software into a sealed box", "plain": "The code is packed into a container image: a sealed box with everything the program needs. The box gets a fingerprint, so any later change can be spotted.", "technical": "Buildah builds the image in-cluster (no Docker daemon) and pushes it to Harbor. Harbor returns the digest (sha256) that identifies it.", "task": "build-push", "touches": ["sdlc-build", "harbor"]},
+    "sbom":    {"title": "Listing every ingredient", "plain": "A tool opens the box and writes down every part inside. This parts list is called an SBOM, a Software Bill of Materials, like an ingredient label.", "technical": "Syft reads the image from Harbor and writes an SPDX-JSON SBOM into the shared workspace.", "task": "sbom", "touches": ["sdlc-build", "harbor"]},
+    "scan":    {"title": "Checking the parts for known problems", "plain": "The parts list is compared with a public list of known weaknesses, like checking food for a recall.", "technical": "Trivy scans the SBOM against its vulnerability database and fails the task if any CRITICAL finding exists.", "task": "vuln-scan", "touches": ["sdlc-build"]},
+    "gw1":     {"title": "Is anything critical?", "plain": "If a serious known weakness is found, the build stops here and goes back to the developer. Nothing unsafe moves forward.", "technical": "Gate: trivy --severity CRITICAL --exit-code 1. A non-zero exit fails the PipelineRun, so the signing step never runs.", "task": null, "touches": ["sdlc-build"]},
+    "reject":  {"title": "Stopped: fix and try again", "plain": "A serious problem was found, so the package was stopped before it could be approved.", "technical": "scan task failed; sign-attest and verify are skipped.", "task": null, "touches": ["sdlc-build"]},
+    "sign":    {"title": "Putting a tamper seal on the box", "plain": "The package passes, so it gets a digital seal. If anyone changes it afterwards, the seal no longer matches. The ingredient list is sealed to it too.", "technical": "Cosign signs the image digest with the lab's private key (held only as a cluster Secret) and attaches the signed SBOM attestation next to the image in Harbor.", "task": "sign-attest", "touches": ["sdlc-build", "harbor"]},
+    "store":   {"title": "Filing it safely and double-checking", "plain": "The warehouse keeps the box, its ingredient list and its seal together. The pipeline then checks the seal once more.", "technical": "Harbor stores image + signature + attestation. The verify task runs cosign verify and verify-attestation with the public key.", "task": "verify", "touches": ["harbor", "sdlc-build"]},
+    "req":     {"title": "Someone asks to run it", "plain": "Now somebody asks the cluster to start the program. Before it agrees, the security guard looks at the box.", "technical": "A Pod create request reaches the Kubernetes API in namespace sdlc-apps; the Kyverno admission webhooks evaluate it.", "task": null, "touches": ["sdlc-apps", "kyverno"]},
+    "gw2":     {"title": "Is the seal intact?", "plain": "The guard checks two things: does the seal match, and does the box come from our own warehouse. If not, the answer is no.", "technical": "ImageValidatingPolicy verifies the Cosign signature and SBOM attestation against the public key; ValidatingPolicy requires harbor.local:9443/poc/.", "task": null, "touches": ["kyverno"]},
+    "ok":      {"title": "Allowed: the program runs", "plain": "The seal was good, so the cluster started the program. Trust was checked, not assumed.", "technical": "Admission allowed; the pod was pulled from Harbor (node trusts the lab CA) and started.", "task": null, "touches": ["sdlc-apps"]},
+    "blocked": {"title": "Blocked: the cluster says no", "plain": "No valid seal, or the wrong source, so the cluster refused to run it. This is the whole point: bad packages are stopped at the door.", "technical": "The admission webhook denied the request. The message below is Kyverno's real answer.", "task": null, "touches": ["kyverno"]}
+  },
+  "tasks": {
+    "build-push":  {"plain": "Build the box", "tech": "build-push"},
+    "sbom":        {"plain": "List the ingredients", "tech": "sbom"},
+    "vuln-scan":   {"plain": "Check for known problems", "tech": "vuln-scan"},
+    "sign-attest": {"plain": "Seal it", "tech": "sign-attest"},
+    "verify":      {"plain": "Check the seal", "tech": "verify"}
+  },
+  "components": {
+    "sdlc-build":       {"plain": "The build line", "tech": "Tekton run · sdlc-build", "blurb": "Where each step of this build runs, one short-lived worker (pod) per step."},
+    "harbor":           {"plain": "The warehouse", "tech": "Harbor registry · harbor", "blurb": "Stores the packages, their ingredient lists and their seals."},
+    "tekton-pipelines": {"plain": "The assembly-line engine", "tech": "Tekton · tekton-pipelines", "blurb": "Starts a worker for each step and keeps the order."},
+    "projectcontour":   {"plain": "The front door", "tech": "Contour/Envoy · projectcontour", "blurb": "Lets traffic in to reach the warehouse safely over HTTPS."},
+    "kyverno":          {"plain": "The security guard", "tech": "Kyverno · kyverno", "blurb": "Checks every request to run a program and says yes or no."},
+    "cert-manager":     {"plain": "The certificate office", "tech": "cert-manager · cert-manager", "blurb": "Issues the certificates that make connections trusted."},
+    "sdlc-apps":        {"plain": "Where programs run", "tech": "Workloads · sdlc-apps", "blurb": "The only place the guard's rules apply in this demo."}
+  }
+}

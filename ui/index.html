@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="ui-token" content="__TOKEN__">
+  <title>Software Supply Chain Live</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-layout="stacked" data-mode="plain">
+<header>
+  <div class="brand"><span class="logo" aria-hidden="true">⛓</span><div><h1>Software Supply Chain, live</h1><p class="sub">Open source + CNCF: build, scan, sign, verify, admit</p></div></div>
+  <div class="controls" role="toolbar" aria-label="Demo controls">
+    <button id="b-start" class="primary" title="Create a new pipeline run">▶ Start a build</button>
+    <button id="b-signed" title="Ask the cluster to run the signed package">Run the signed package</button>
+    <button id="b-unsigned" class="danger" title="Ask the cluster to run a package that was never signed">Try an unsigned one</button>
+    <button id="b-foreign" class="danger" title="Ask the cluster to run an image from the public internet">Try one from the internet</button>
+    <button id="b-reset" title="Remove the demo programs">Reset</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button id="b-replay" title="Replay a recorded run">⏵ Replay</button>
+    <div class="seg" role="group" aria-label="Explanation level"><button id="m-plain" aria-pressed="true">Plain</button><button id="m-tech" aria-pressed="false">Technical</button></div>
+    <button id="b-layout" title="Switch between stacked and side-by-side">⇆ Layout</button>
+  </div>
+</header>
+<div id="banner" hidden></div>
+<main>
+  <section id="story" aria-live="polite" aria-atomic="true">
+    <div class="kicker" id="s-kicker"></div>
+    <h2 id="s-title"></h2>
+    <p id="s-plain"></p>
+    <p id="s-tech" class="tech"></p>
+  </section>
+  <section id="proc" aria-label="The process as a BPMN diagram">
+    <h3>The process <small>BPMN 2.0, the industry-standard process notation</small></h3>
+    <div id="bpmn" role="img" aria-label="BPMN diagram of the software artifact lifecycle"></div>
+  </section>
+  <section id="machinery" aria-label="Where the work happens">
+    <h3>Where the work happens <small>live from the cluster</small></h3>
+    <div id="run"></div>
+    <div id="comps"></div>
+  </section>
+  <section id="evidence" aria-label="Evidence">
+    <h3>The evidence <small>real results, not a simulation</small></h3>
+    <dl id="ev"></dl>
+    <div id="verdict" hidden></div>
+  </section>
+</main>
+<aside id="logs" hidden aria-label="Raw log"><div class="logs-head"><strong id="logs-title">Raw log</strong><button id="logs-close" aria-label="Close log">✕</button></div><pre id="logs-body"></pre></aside>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

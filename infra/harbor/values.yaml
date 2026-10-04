@@ -1,0 +1,28 @@
+# Harbor chart 1.19.2 (app 2.15.2) behind Contour; TLS from cert-manager local CA (secret harbor-tls).
+expose:
+  type: ingress
+  tls:
+    enabled: true
+    certSource: secret
+    secret:
+      secretName: harbor-tls
+  ingress:
+    hosts:
+      core: harbor.local
+    className: contour
+    annotations:
+      projectcontour.io/response-timeout: infinity
+externalURL: https://harbor.local:9443
+existingSecretAdminPassword: harbor-admin
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+persistence:
+  persistentVolumeClaim:
+    registry: {size: 10Gi}
+    database: {size: 2Gi}
+    redis: {size: 1Gi}
+    jobservice: {jobLog: {size: 1Gi}}
+    trivy: {size: 5Gi}
+trivy:
+  enabled: true
+metrics:
+  enabled: false

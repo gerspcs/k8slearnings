@@ -1,0 +1,15 @@
+# Use with: kubectl create -f pipelines/pipelinerun.yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata: {generateName: artifact-run-}
+spec:
+  pipelineRef: {name: artifact-pipeline}
+  params: [{name: tag, value: "v1"}]
+  workspaces:
+    - name: source
+      configMap: {name: sample-app-src}
+    - name: out
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ReadWriteOnce]
+          resources: {requests: {storage: 100Mi}}
